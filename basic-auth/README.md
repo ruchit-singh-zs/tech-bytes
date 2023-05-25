@@ -16,4 +16,14 @@ This step involves add temporary instance of username and password to validate t
 mkcert is a simple tool for making locally-trusted development certificates. It requires no configuration. This will setup locally trusted TLS certificates
 
     brew install mkcert
-    mkcert -install
+    mkcert localhost(creates a locally trusted certificate and key)
+
+## cURL To test
+
+- curl -i -u your_username:your_password https://localhost:4000/unauthenticated 
+
+- curl -i -u your_username:your_password https://localhost:4000/authenticated 
+
+- curl -i https://localhost:4000/authenticated  
+
+- curl -i https://localhost:4000/unauthenticated  
