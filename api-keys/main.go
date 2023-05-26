@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,7 +46,7 @@ func main() {
 	}
 
 	log.Printf("starting server on %s", srv.Addr)
-	err := srv.ListenAndServeTLS("./localhost.pem", "./localhost-key.pem")
+	err := srv.ListenAndServeTLS("./install.pem", "./install-key.pem")
 	log.Fatal(err)
 }
 
@@ -59,7 +60,14 @@ func (app *application) unauthenticated(w http.ResponseWriter, r *http.Request) 
 
 func (app application) apiKeyAuth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		key := r.Header.Get(apiKeyHeader)
+		encodedKey := r.Header.Get(apiKeyHeader)
+		rawKey, err := base64.StdEncoding.DecodeString(encodedKey)
+		if err != nil {
+			handleError(w)
+			return
+		}
+
+		key := string(rawKey)
 		if key != "" {
 			apiKeyHash := sha256.Sum256([]byte(key))
 			expectedapiKeyHash := sha256.Sum256([]byte(app.auth.APIKey))
@@ -72,7 +80,11 @@ func (app application) apiKeyAuth(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		handleError(w)
 	})
+}
+
+func handleError(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+	http.Error(w, "Unauthorized", http.StatusUnauthorized)
 }
